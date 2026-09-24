@@ -2,9 +2,20 @@
 
 This Codex plugin asks TypeSafe Jev to choose `gpt-6-luna`, `gpt-6-sol`, or `gpt-6-astra` for eligible independent subagents. It leaves the parent model and explicit subagent model choices untouched. Codex may encrypt the task message before a PreToolUse hook sees it, so agents should use the plaintext `recommend` command before spawning.
 
-## Install
+## Requirements
 
-You need Codex with plugin and subagent support, Bun on the Codex host's PATH, a TypeSafe API key, and access to the configured Astra, Sol, and Luna models. The launch scripts currently require a POSIX shell, such as on macOS, Linux, or WSL. Bun 1.3.14 and Codex CLI 0.156.1 were used for verification.
+Recipients need:
+
+- Codex with plugin and subagent support, plus access to the configured Astra, Sol, and Luna models.
+- Bun installed and available on the Codex host's PATH.
+- Their own TypeSafe API key. No API key is bundled with this plugin.
+- Review and trust of the plugin hooks in Codex through `/hooks` after installation.
+
+The launch scripts require a POSIX shell, such as on macOS, Linux, or WSL. Bun 1.3.14 and Codex CLI 0.156.1 were used for verification.
+
+For the optional pstack integration, recipients also need pstack installed. They must enable the bridge with `scripts/router pstack-enable` and apply the included [integration instructions](references/pstack-integration.md) to their own Codex `AGENTS.md` and pstack model sheet. Personal `AGENTS.md` changes do not travel with the plugin.
+
+## Install
 
 Add the GitHub marketplace and install the plugin:
 
@@ -28,7 +39,7 @@ When testing a local clone before publication, replace the marketplace-add comma
 
 Run `scripts/router status` to check whether routing is enabled and a credential is available. Run `scripts/router disable` or `scripts/router enable` to change it. Run `scripts/router live-smoke` for a synthetic request to TypeSafe. The smoke command prints the model, latency, confidence, and usage, but no task text or key.
 
-The pstack bridge is off by default. If you use pstack, run `scripts/router pstack-enable` and add the [scoped integration instructions](references/pstack-integration.md) to your Codex `AGENTS.md` and pstack model sheet. Keep existing model rows as fallbacks. This repository does not install or overwrite personal pstack settings. `scripts/router pstack-disable` turns the bridge off without changing the rest of the config. `status` reports `pstackRouting`.
+The pstack bridge is off by default. Follow the pstack requirements above and keep existing model rows as fallbacks. This repository does not install or overwrite personal pstack settings. `scripts/router pstack-disable` turns the bridge off without changing the rest of the config. `status` reports `pstackRouting`.
 
 ## Recommend a model before spawning
 
