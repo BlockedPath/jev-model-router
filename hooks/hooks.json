@@ -1,0 +1,31 @@
+{
+  "description": "Route eligible independent subagents with TypeSafe Jev.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "BUN_CONFIG_VERBOSE_FETCH=0 bun --no-env-file \"${PLUGIN_ROOT:-$CLAUDE_PLUGIN_ROOT}/src/hook.ts\" session",
+            "timeout": 5,
+            "additionalContextLimit": 2000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(spawn_agent|collaboration\\.spawn_agent|collaborationspawn_agent)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "BUN_CONFIG_VERBOSE_FETCH=0 bun --no-env-file \"${PLUGIN_ROOT:-$CLAUDE_PLUGIN_ROOT}/src/hook.ts\"",
+            "timeout": 5,
+            "statusMessage": "Choosing subagent model"
+          }
+        ]
+      }
+    ]
+  }
+}

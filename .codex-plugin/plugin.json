@@ -1,0 +1,23 @@
+{
+  "name": "jev-model-router",
+  "version": "0.1.0+codex.20260924203156",
+  "description": "Route eligible Codex subagents with TypeSafe Jev.",
+  "author": {
+    "name": "BlockedPath"
+  },
+  "repository": "https://github.com/BlockedPath/jev-model-router",
+  "homepage": "https://github.com/BlockedPath/jev-model-router",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Jev Model Router",
+    "shortDescription": "Route eligible subagents with Jev.",
+    "longDescription": "Uses a bounded TypeSafe Jev choice to select Astra, Sol, or Luna for eligible subagents while preserving explicit model choices.",
+    "developerName": "BlockedPath",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Help me configure and check Jev Model Router."
+    ]
+  }
+}

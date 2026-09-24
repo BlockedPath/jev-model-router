@@ -1,0 +1,7 @@
+# Scoped pstack default recommendations
+
+Keep the existing pstack model rows as fallbacks. When the Jev Model Router plugin is available and its `pstackRouting` opt-in is enabled, use it before spawning agents with these Sol defaults: `feature, refactoring` and `swarm workers` with a worker subagent, and `how explorer` and `why investigators` with a researcher or explorer subagent. For these routine defaults, this scoped rule takes precedence over the saved model row. Direct user choices, custom role pins, and panel assignments take precedence over this rule.
+
+Use the `jev-model-router` plugin skill to locate the installed `recommend-pstack` command. Before the spawn, send JSON with exactly `pstackRole`, `modelSource: "pstack-default"`, and `spawn`. The `spawn` object contains the original proposed input, including `model: "gpt-6-sol"` and `fork_turns: "none"`. Send the task as JSON on stdin without shell interpolation. If the command returns `kind: "route"`, replace only `spawn.model` with its model. If it returns `kind: "preserve"` or is unavailable, keep the original Sol input.
+
+This bridge does not apply to direct user model choices, custom role model pins, expert or validator work, bug and performance slots, strongest-judgment slots, or comparison, race, and panel assignments. A panel-selected Sol still has panel provenance. Do not infer `modelSource` from the task name. Do not use Jev as a Codex model slug. `auto` and omitted models retain their inherit-parent behavior. This instruction does not authorize additional subagents.

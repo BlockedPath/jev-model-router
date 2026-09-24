@@ -1,0 +1,18 @@
+---
+name: jev-model-router
+description: Recommend a model for an eligible independent Codex subagent, or configure and diagnose the Jev Model Router plugin. Does not authorize creating subagents.
+---
+
+# Jev Model Router
+
+Before an independent subagent call without a user, role, or pstack model pin, resolve `../../scripts/router` relative to this `SKILL.md` and run its `recommend` command. Send the proposed spawn input JSON on stdin. Write the exact JSON to a local file with a file tool, then use `'/absolute/path/to/scripts/router' recommend < '/absolute/path/to/proposed-spawn.json'`. Do not interpolate the task message into shell code. The command returns `kind: "route"` with a model or `kind: "preserve"` with a reason. For `route`, pass the returned model explicitly to `spawn_agent` and leave every other field unchanged. For `preserve`, use the original input. This skill does not authorize a new subagent.
+
+For the opted-in pstack bridge, use `../../scripts/router recommend-pstack` from this skill directory with JSON shaped exactly as `{"pstackRole":"feature, refactoring","modelSource":"pstack-default","spawn":{...}}`. The `spawn` object must be the original proposed input, including `model: "gpt-6-sol"`. The role name must be exactly `feature, refactoring`, `swarm workers`, `how explorer`, or `why investigators`. The first two require a worker; the other two require a researcher or explorer. Use this command only when Sol came from that pstack default. A user model choice, custom role pin, protected expert or validator role, bug or performance role, strongest-judgment role, or comparison, race, or panel selection is not a pstack default, even when its model is Sol. If `kind` is `route`, replace only `spawn.model` with the returned model. If `kind` is `preserve` or the command is unavailable, keep the original spawn input. Use the same safe stdin or file method as `recommend`.
+
+Use `../../scripts/router status`, resolved from this skill directory, to see whether routing is enabled and whether a TypeSafe credential is available. The command prints the credential source, never its value.
+
+To configure an existing TypeSafe key file, run `../../scripts/router setup --env-file /absolute/path` from this skill directory. This writes only the router config at `${CODEX_HOME:-~/.codex}/jev-model-router.json`, unless `JEV_ROUTER_CONFIG` names an absolute alternative. Do not read or display the key in an agent response. An exported `TYPESAFE_API_KEY` takes precedence over the configured file.
+
+Use `../../scripts/router disable` or `../../scripts/router enable` from this skill directory to change routing. The pstack bridge is off by default; `../../scripts/router pstack-enable` and `../../scripts/router pstack-disable` change only that opt-in. Use `../../scripts/router live-smoke` only when the user requests a live check. It sends a synthetic task to TypeSafe and prints the chosen model, latency, confidence, and usage without printing the key.
+
+For diagnosis, inspect `../../hooks/hooks.json`, then test a synthetic `PreToolUse` event through the hook. Codex can encrypt `tool_input.message` before the hook sees it; the hook preserves those calls and provides guidance to use `recommend` before the spawn. Plaintext hook routing also recognizes `spawn_agent`, `collaboration.spawn_agent`, and `collaborationspawn_agent`. It considers only calls with `fork_turns: "none"`, no `model` property, a supported role and effort, and a nonempty task. It preserves expert and validator roles, explicit choices, inherited history, and unknown roles. If Jev is unavailable or uncertain for an eligible call, it selects Sol. Check `/hooks` for trust status after installation or an update.
