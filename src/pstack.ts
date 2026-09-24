@@ -1,4 +1,4 @@
-import { eligibility, MODELS, type Eligibility } from "./router";
+import { eligibility, isEffort, MODELS, type EffortPolicy, type Eligibility } from "./router";
 
 const ROLE_AGENTS = {
   "feature, refactoring": ["worker"],
@@ -12,8 +12,8 @@ function record(value: unknown): value is Record<string, unknown> {
 }
 
 export function pstackEligibility(value: unknown): Eligibility {
-  if (!record(value) || Object.keys(value).length !== 3 ||
-      !["pstackRole", "modelSource", "spawn"].every((key) => Object.hasOwn(value, key))) {
+  if (!record(value) || !["pstackRole", "modelSource", "spawn"].every((key) => Object.hasOwn(value, key)) ||
+      Object.keys(value).some((key) => !["pstackRole", "modelSource", "spawn", "effortSource"].includes(key))) {
     return { kind: "preserve", reason: "invalid pstack input" };
   }
   if (value.modelSource !== "pstack-default") return { kind: "preserve", reason: "unsupported model source" };
@@ -27,6 +27,18 @@ export function pstackEligibility(value: unknown): Eligibility {
   if (typeof spawn.agent_type !== "string" || !allowedAgents.some((agent) => agent === spawn.agent_type)) {
     return { kind: "preserve", reason: "pstack role and agent type mismatch" };
   }
+  let effort: EffortPolicy;
+  if (!Object.hasOwn(value, "effortSource")) {
+    effort = isEffort(spawn.reasoning_effort)
+      ? { kind: "fixed", value: spawn.reasoning_effort } : { kind: "preserve" };
+  } else if (value.effortSource === "explicit" && isEffort(spawn.reasoning_effort)) {
+    effort = { kind: "fixed", value: spawn.reasoning_effort };
+  } else if (value.effortSource === "role-default" && spawn.reasoning_effort === "high") {
+    effort = spawn.agent_type === "explorer" ? { kind: "preserve" } : { kind: "auto" };
+  } else {
+    return { kind: "preserve", reason: "invalid effort source" };
+  }
   const { model: _model, ...unpinnedSpawn } = spawn;
-  return eligibility({ hook_event_name: "PreToolUse", tool_name: "collaborationspawn_agent", tool_input: unpinnedSpawn });
+  const eligible = eligibility({ hook_event_name: "PreToolUse", tool_name: "collaborationspawn_agent", tool_input: unpinnedSpawn });
+  return eligible.kind === "route" ? { ...eligible, effort } : eligible;
 }

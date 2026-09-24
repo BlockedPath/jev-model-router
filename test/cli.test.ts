@@ -30,6 +30,7 @@ test("recommend returns an explicit fallback model for eligible plaintext withou
   const input = { message: "A private proposed task", task_name: "worker_task", fork_turns: "none", agent_type: "worker", extra: 1 };
   const result = await recommend(input);
   expect(result.output).toMatchObject({ kind: "route", model: "gpt-6-sol", source: "fallback", reason: "credential unavailable" });
+  expect(result.output).toMatchObject({ reasoning_effort: "high", reasoning_source: "fallback", reasoning_confidence: null });
   expect(JSON.stringify(result.output)).not.toContain(input.message);
   expect(JSON.stringify(result.output)).not.toContain("trap-key");
   expect(result.exitCode).toBe(0);
@@ -66,9 +67,32 @@ test("recommend-pstack requires opt-in and falls back to Sol only for an eligibl
   });
   const enabled = await recommend(input, JSON.stringify({ pstackRouting: true }), undefined, "recommend-pstack");
   expect(enabled.output).toMatchObject({ kind: "route", model: "gpt-6-sol", source: "fallback", reason: "credential unavailable" });
+  expect(Object.hasOwn(enabled.output, "reasoning_effort")).toBe(false);
+  expect(enabled.output.reasoning_source).toBe("preserved");
   expect(JSON.stringify(enabled.output)).not.toContain(input.spawn.message);
   expect((await recommend(input, JSON.stringify({ enabled: false, pstackRouting: true }), undefined, "recommend-pstack")).output)
     .toEqual({ kind: "preserve", reason: "router disabled" });
+});
+
+test("pstack effort provenance serializes automatic, explicit and legacy fallback distinctly", async () => {
+  const base = { pstackRole: "feature, refactoring", modelSource: "pstack-default", spawn: {
+    message: "Routine code change", task_name: "worker_change", fork_turns: "none", agent_type: "worker",
+    model: "gpt-6-sol", reasoning_effort: "high", extra: "preserved",
+  } };
+  const config = JSON.stringify({ pstackRouting: true });
+  const automatic = await recommend({ ...base, effortSource: "role-default" }, config, undefined, "recommend-pstack");
+  expect(automatic.output).toMatchObject({ kind: "route", model: "gpt-6-sol", reasoning_effort: "high",
+    reasoning_source: "fallback", reasoning_confidence: null });
+  const explicit = await recommend({ ...base, effortSource: "explicit",
+    spawn: { ...base.spawn, reasoning_effort: "xhigh" } }, config, undefined, "recommend-pstack");
+  expect(explicit.output).toMatchObject({ kind: "route", reasoning_effort: "xhigh", reasoning_source: "explicit" });
+  const legacy = await recommend(base, config, undefined, "recommend-pstack");
+  expect(legacy.output).toMatchObject({ kind: "route", reasoning_effort: "high", reasoning_source: "explicit" });
+  for (const result of [automatic, explicit, legacy]) {
+    expect(JSON.stringify(result.output)).not.toContain(base.spawn.message);
+    expect(JSON.stringify(result.output)).not.toContain("effortSource");
+    expect(JSON.stringify(result.output)).not.toContain("trap-key");
+  }
 });
 
 test("excluded pstack requests do not read the configured key file", async () => {
@@ -80,6 +104,8 @@ test("excluded pstack requests do not read the configured key file", async () =>
     { pstackRole: "bug-fix", modelSource: "pstack-default", spawn },
     { pstackRole: "feature, refactoring", modelSource: "pstack-default", spawn: { ...spawn, task_name: "validator_check" } },
     { pstackRole: "feature, refactoring", modelSource: "pstack-default", spawn: { ...spawn, message: `gAAAA${"A".repeat(100)}=` } },
+    { pstackRole: "feature, refactoring", modelSource: "pstack-default", effortSource: "role-default", spawn },
+    { pstackRole: "feature, refactoring", modelSource: "pstack-default", effortSource: "explicit", spawn },
   ]) {
     const result = await recommend(value, config, undefined, "recommend-pstack");
     expect(result.output.kind).toBe("preserve");

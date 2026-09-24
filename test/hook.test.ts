@@ -44,6 +44,20 @@ test("eligible input falls back to Sol while preserving all fields and never loa
   expect(result.exitCode).toBe(0);
 });
 
+test("automatic fallback adds high only to ordinary roles and preserves unrelated input", async () => {
+  const tool_input = { message: "task", task_name: "worker_task", fork_turns: "none", agent_type: "worker",
+    extra: { nested: 1 } };
+  const result = await hook({ hook_event_name: "PreToolUse", tool_name: "spawn_agent", tool_input });
+  expect(result.output.hookSpecificOutput.updatedInput).toEqual({ ...tool_input, model: "gpt-6-sol", reasoning_effort: "high" });
+  expect(Object.keys(result.output.hookSpecificOutput.updatedInput).sort()).toEqual(
+    [...Object.keys(tool_input), "model", "reasoning_effort"].sort());
+  expect(result.output.hookSpecificOutput.additionalContext).toContain("effort high (fallback");
+
+  const planner = { ...tool_input, agent_type: "planner", task_name: "planner_task" };
+  const preserved = await hook({ hook_event_name: "PreToolUse", tool_name: "spawn_agent", tool_input: planner });
+  expect(preserved.output.hookSpecificOutput.updatedInput).toEqual({ ...planner, model: "gpt-6-sol" });
+});
+
 test("invalid config passes eligible call through with a sanitized error", async () => {
   const result = await hook({ hook_event_name: "PreToolUse", tool_name: "spawn_agent", tool_input: {
     message: "secret task", task_name: "worker_task", fork_turns: "none",
@@ -68,9 +82,10 @@ test("session start adds scoped pstack guidance only when opted in", async () =>
   const text = result.output.hookSpecificOutput.additionalContext;
   expect(text).toContain("/scripts/router' recommend-pstack");
   expect(text).toContain('modelSource:"pstack-default"');
+  expect(text).toContain('effortSource:"role-default"');
   expect(text).toContain("comparison or race panel selections stay fixed");
-  expect(text).toContain("kind preserve or an unavailable command, keep the original Sol input");
-  expect(text.length).toBeLessThan(2000);
+  expect(text).toContain("kind preserve or an unavailable command, keep the original Sol/high input");
+  expect(text.length).toBeLessThan(2500);
 });
 
 test("opaque Codex message is preserved with guidance and no credential or network access", async () => {

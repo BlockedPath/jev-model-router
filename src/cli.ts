@@ -23,9 +23,13 @@ async function main(): Promise<void> {
         return;
       }
       const { key } = await credential(config);
-      const decision = await route(eligible.task, eligible.role, key, config.confidenceThreshold);
+      const decision = await route({ task: eligible.task, role: eligible.role, effort: eligible.effort,
+        key, threshold: config.confidenceThreshold });
       console.log(JSON.stringify({ kind: "route", model: decision.model, source: decision.source,
-        reason: decision.reason, confidence: decision.confidence ?? null, usage: decision.usage ?? null }));
+        reason: decision.reason, confidence: decision.confidence ?? null,
+        reasoning_effort: decision.reasoning_effort, reasoning_source: decision.reasoning_source,
+        reasoning_reason: decision.reasoning_reason, reasoning_confidence: decision.reasoning_confidence ?? null,
+        usage: decision.usage ?? null }));
     } catch (error) {
       console.log(JSON.stringify({ kind: "preserve", reason: error instanceof ConfigError ? error.message : "unexpected local error" }));
     }
@@ -65,10 +69,14 @@ async function main(): Promise<void> {
     const found = await credential(config);
     if (!found.key) throw new ConfigError("No TypeSafe credential is available");
     const started = performance.now();
-    const result = await route("Look up the current installed Bun version and report the version string.", "researcher", found.key, config.confidenceThreshold);
+    const result = await route({ task: "Look up the current installed Bun version and report the version string.",
+      role: "researcher", effort: { kind: "auto" }, key: found.key, threshold: config.confidenceThreshold });
     console.log(JSON.stringify({ model: result.model, source: result.source, reason: result.reason,
-      confidence: result.confidence ?? null, latencyMs: Math.round(performance.now() - started), usage: result.usage ?? null }));
-    if (result.source !== "jev") process.exitCode = 1;
+      confidence: result.confidence ?? null, reasoning_effort: result.reasoning_effort,
+      reasoning_source: result.reasoning_source, reasoning_reason: result.reasoning_reason,
+      reasoning_confidence: result.reasoning_confidence ?? null,
+      latencyMs: Math.round(performance.now() - started), usage: result.usage ?? null }));
+    if (result.source !== "jev" || result.reasoning_source !== "jev") process.exitCode = 1;
     return;
   }
   throw new ConfigError("Usage: router recommend | recommend-pstack | setup --env-file /absolute/path | status | enable | disable | pstack-enable | pstack-disable | live-smoke");
