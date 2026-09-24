@@ -49,6 +49,10 @@ If the command returns `kind: "route"`, pass its `model` and any returned `reaso
 
 For ordinary worker and researcher calls, start with `reasoning_effort: "high"` as the fallback. If that high value is a role default, send a copy without `reasoning_effort` to `recommend` so Jev can choose it; retain the original input for a preserved or unavailable command. An explicit user effort stays in the request and is never reconsidered. Unpinned default, worker, and researcher calls can receive an automatic effort. Planner, reviewer, and explorer calls keep their existing effort unless the caller specifies one.
 
+### Configure custom role profiles
+
+A hard-pinned `model_reasoning_effort` in a Codex role profile overrides the effort passed to `spawn_agent`. If your ordinary worker and researcher profiles pin the default `high` effort, remove that setting only from those two profiles to let Jev's choice take effect. Apply the [high-fallback instructions](references/pstack-integration.md) so disabled or unavailable routing still uses the original Sol/high settings, then start a fresh Codex session. Keep intentional fixed efforts, including expert, validator, planner, reviewer, and panel settings. The plugin does not edit role profiles automatically.
+
 ## Reconsider scoped pstack Sol defaults
 
 When `pstackRouting` is enabled and Sol came from one of the pstack defaults below, send `{"pstackRole":"feature, refactoring","modelSource":"pstack-default","effortSource":"role-default","spawn":{...}}` to `scripts/router recommend-pstack` on stdin. Replace the sample role with the exact matching row and include the full original `spawn` input, including `model: "gpt-6-sol"`, `fork_turns: "none"`, and `reasoning_effort: "high"`. This is a caller attestation of where Sol and high effort came from; the plugin cannot infer provenance from their values or a task name. Use `effortSource: "explicit"` when a user or custom role supplied the effort. The original three-key request remains valid and leaves its effort fixed or preserved.
