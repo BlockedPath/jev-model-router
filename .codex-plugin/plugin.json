@@ -1,6 +1,6 @@
 {
   "name": "jev-model-router",
-  "version": "0.1.0+codex.20260924203156",
+  "version": "0.1.0+codex.20260924215511",
   "description": "Route eligible Codex subagents with TypeSafe Jev.",
   "author": {
     "name": "BlockedPath"
